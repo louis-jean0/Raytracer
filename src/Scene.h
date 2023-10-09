@@ -85,7 +85,9 @@ public:
     Vec3 rayTraceRecursive(Ray ray, int NRemainingBounces) {
         
         RaySceneIntersection raySceneIntersection = computeIntersection(ray);
-        //Vec3 newRay = raySceneIntersection.
+        if(NRemainingBounces >= 1) {
+            Vec3 newRay = rayTraceRecursive(ray,NRemainingBounces - 1);
+        }
         Vec3 color;
         return color;
         

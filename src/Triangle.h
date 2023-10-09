@@ -3,6 +3,7 @@
 #include "Vec3.h"
 #include "Ray.h"
 #include "Plane.h"
+#include <optional>
 
 struct RayTriangleIntersection{
     bool intersectionExists;
@@ -40,25 +41,51 @@ public:
         //TODO completer
         return result;
     }
-    float squareDistanceToSupportPlane( Vec3 const & p ) const {
+    float squareDistanceToSupportPlane( Vec3 const & p ) const {        
         float result;
         //TODO completer
         return result;
     }
     float distanceToSupportPlane( Vec3 const & p ) const { return sqrt( squareDistanceToSupportPlane(p) ); }
+
     bool isParallelTo( Line const & L ) const {
-        bool result;
-        //TODO completer
-        return result;
+        Plane supportPlane(m_c[0],m_normal); // On prend n'importe quel point du triangle et la normale au triangle pour définir le plan support
+        return supportPlane.isParallelTo(L);
     }
-    Vec3 getIntersectionPointWithSupportPlane( Line const & L ) const {
+
+    std::optional<Vec3> getIntersectionPointWithSupportPlane( Line const & L ) const {
         // you should check first that the line is not parallel to the plane!
+        
+        if (isParallelTo(L)) return std::nullopt;
+
         Vec3 result;
-        //TODO completer
+        Vec3 P0 = L.origin();
+        Vec3 P1 = m_c[0];
+        Vec3 D = L.direction();
+        float t;
+
+        t = Vec3::dot(P1 - P0,m_normal) / Vec3::dot(D,m_normal);
+
+        result = P0 + t * D;
+
         return result;
+        
     }
+
     void computeBarycentricCoordinates( Vec3 const & p , float & u0 , float & u1 , float & u2 ) const {
         //TODO Complete
+        Vec3 A = m_c[0];
+        Vec3 B = m_c[1];
+        Vec3 C = m_c[2];
+        float ABC = Triangle(A,B,C).area;
+        float PAB = Triangle(p,A,B).area;
+        float PAC = Triangle(p,A,C).area;
+        float PBC = Triangle(p,B,C).area;
+
+        u0 = PAB/ABC;
+        u1 = PAC/ABC;
+        u2 = PBC/ABC;
+
     }
 
     RayTriangleIntersection getIntersection( Ray const & ray ) const {
