@@ -83,12 +83,13 @@ public:
 
 
     RaySphereIntersection intersect(const Ray &ray) const {
+        
         RaySphereIntersection intersection;
-        float t;
         float a = Vec3::dot(ray.direction(),ray.direction());
-        float b = Vec3::dot(ray.direction(),(ray.origin() - m_center));
+        float b = 2 * Vec3::dot(ray.direction(),(ray.origin() - m_center));
         float c = pow((ray.origin() - m_center).norm(),2) - pow(m_radius,2);
         float delta = pow(b,2) - (4 * a * c);
+        float epsilon = 0.0001f;
         
         if(delta < 0) {
 
@@ -99,16 +100,27 @@ public:
         else {
 
             intersection.intersectionExists = true;
-            float t1 = (-b - sqrt(delta)) / 2*a;
-            float t2 = (-b + sqrt(delta)) / 2*a;
-            float tmin = std::min(t1,t2);
-            float tmax = std::max(t1,t2);
-            intersection.t = tmin;
-            intersection.intersection = ray.origin() + (tmin * ray.direction());
-            intersection.secondintersection = ray.origin() + (tmax * ray.direction());
-            Vec3 normal = (intersection.intersection - m_center);
-            normal.normalize();
-            intersection.normal = normal;
+            float t1 = (-b - sqrt(delta)) / (2*a);
+            float t2 = (-b + sqrt(delta)) / (2*a);
+            float tmin = (t1 > epsilon) ? t1 : t2;
+            float tmax = (t1 > tmin) ? t1 : t2;
+            if(tmin > epsilon) {
+                intersection.t = tmin;
+                intersection.intersection = ray.origin() + (tmin * ray.direction());
+            } else if (tmax > epsilon) {
+                intersection.t = tmax;
+                intersection.intersection = ray.origin() + (tmax * ray.direction());
+            } else {
+                intersection.intersectionExists = false;
+            }
+
+            if(intersection.intersectionExists) {
+                intersection.t = tmin;
+                intersection.secondintersection = ray.origin() + (std::max(tmax,tmin) * ray.direction());
+                Vec3 normal = (intersection.intersection - m_center);
+                normal.normalize();
+                intersection.normal = normal;
+            }
            
         }
 

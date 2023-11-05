@@ -101,6 +101,12 @@ static inline Vec3 operator * (Vec3 const & b , float a ) {
 static inline Vec3 operator / (Vec3 const &  a , float b) {
    return Vec3(a[0]/b , a[1]/b , a[2]/b);
 }
+static inline bool operator != (Vec3 const &a, Vec3 const &b) {
+    return (a[0] != b[0]) && (a[1] != b[1]) && (a[2] != b[2]);
+}
+static inline bool operator == (Vec3 const &a, Vec3 const &b) {
+    return (a[0] == b[0]) && (a[1] == b[1]) && (a[2] == b[2]);
+}
 static inline std::ostream & operator << (std::ostream & s , Vec3 const & p) {
     s << p[0] << " " << p[1] << " " << p[2];
     return s;
@@ -262,7 +268,6 @@ public:
     Mat3 operator-() const {
         return Mat3(-vals[0], -vals[1], -vals[2], -vals[3], -vals[4], -vals[5], -vals[6], -vals[7], -vals[8]);
     }
-
 
 private:
     float vals[9];

@@ -20,7 +20,9 @@ public:
     Vec3 const & direction() const { return m_direction; }
     Vec3 project( Vec3 const & p ) const {
         Vec3 result;
-        //TODO completer
+        Vec3 pointToOriginVector = p - m_origin;
+        float t = Vec3::dot(pointToOriginVector, m_direction) / m_direction.squareLength();
+        result = m_origin + t * m_direction;
         return result;
     }
     float squareDistance( Vec3 const & p ) const {

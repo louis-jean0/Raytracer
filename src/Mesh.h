@@ -130,10 +130,9 @@ public:
         for( unsigned int v = 0 ; v < vertices.size() ; ++v ) {
             vertices[v].position = transform*vertices[v].position;
         }
-
-        //        recomputeNormals();
-        //        build_positions_array();
-        //        build_normals_array();
+        // recomputeNormals();
+        // build_positions_array();
+        // build_normals_array();
     }
 
     void scale( Vec3 const & scale ){
@@ -198,15 +197,15 @@ public:
 
     }
 
-    RayTriangleIntersection intersect( Ray const & ray ) const {
-        RayTriangleIntersection closestIntersection;
-        closestIntersection.t = FLT_MAX;
-        // Note :
-        // Creer un objet Triangle pour chaque face
-        // Vous constaterez des problemes de précision
-        // solution : ajouter un facteur d'échelle lors de la création du Triangle : float triangleScaling = 1.000001;
-        return closestIntersection;
-    }
+    // RayTriangleIntersection intersect( Ray const & ray ) const {
+    //     RayTriangleIntersection closestIntersection;
+    //     closestIntersection.t = FLT_MAX;
+    //     // Note :
+    //     // Creer un objet Triangle pour chaque face
+    //     // Vous constaterez des problemes de précision
+    //     // solution : ajouter un facteur d'échelle lors de la création du Triangle : float triangleScaling = 1.000001;
+    //     return closestIntersection;
+    // }
 };
 
 

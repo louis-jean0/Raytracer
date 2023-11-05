@@ -1,21 +1,29 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <cfloat>
+#include <cstdlib>
+#include <limits>
+#include <locale>
 #include <vector>
 #include <string>
+#include "Camera.h"
+#include "Material.h"
 #include "Mesh.h"
 #include "Sphere.h"
 #include "Square.h"
-
-
+#include "Vec3.h"
 #include <GL/glut.h>
-
 
 enum LightType {
     LightType_Spherical,
     LightType_Quad
 };
 
+enum MeshType {
+    MeshType_Sphere,
+    MeshType_Square
+};
 
 struct Light {
     Vec3 material;
@@ -28,6 +36,9 @@ struct Light {
     Mesh quad;
 
     float powerCorrection;
+    float ambientPower;
+    float diffusePower;
+    float specularPower;
 
     Light() : powerCorrection(1.0) {}
 
@@ -54,7 +65,6 @@ class Scene {
 
 public:
 
-
     Scene() {
     }
 
@@ -74,31 +84,197 @@ public:
         }
     }
 
+    Vec3 sampleAreaLight(const Light &light, float squareSide) {
 
+        Vec3 center = light.pos;
 
+        Vec3 normal(0.0f,0.0f,-1.0f);
+        Vec3 upVector(0.0f,1.0f,0.0f);
+        Vec3 rightVector(1.0f,0.0f,0.0f);
+
+        upVector = upVector * (squareSide / 2.0f);
+        rightVector = rightVector * (squareSide / 2.0f);
+
+        float u = (float)rand()/(float)(RAND_MAX) - 0.5f;
+        float v = (float)rand()/(float)(RAND_MAX) - 0.5f;
+
+        Vec3 sampledPoint = center + (u * rightVector) + (v * upVector);
+
+        return sampledPoint;
+
+    }
 
     RaySceneIntersection computeIntersection(Ray const & ray) {
+
         RaySceneIntersection result;
+        result.intersectionExists = false;
+        float closestIntersection = FLT_MAX;
+        int nbSpheres = spheres.size();
+        int nbSquares = squares.size();
+
+        // Traitement des sphères
+
+        for(int i = 0; i < nbSpheres; i++) {
+
+            const Sphere sphere = spheres[i];
+
+            RaySphereIntersection sphereIntersection = sphere.intersect(ray);
+
+            if(sphereIntersection.intersectionExists && sphereIntersection.t < closestIntersection) {
+
+                closestIntersection = sphereIntersection.t;
+                result.intersectionExists = true;
+                result.t = sphereIntersection.t;
+                result.objectIndex = i;
+                result.typeOfIntersectedObject = MeshType_Sphere;
+                result.raySphereIntersection = sphereIntersection;
+
+            }
+
+        }
+
+        // Traitement des carrés
+
+        for(int j = 0; j < nbSquares; j++) {
+
+            const Square square = squares[j];
+
+            RaySquareIntersection squareIntersection = square.intersect(ray);
+
+            if(squareIntersection.intersectionExists && squareIntersection.t < closestIntersection) {
+
+                closestIntersection = squareIntersection.t;
+                result.intersectionExists = true;
+                result.t = squareIntersection.t;
+                result.objectIndex = j;
+                result.typeOfIntersectedObject = MeshType_Square;
+                result.raySquareIntersection = squareIntersection;
+
+            }
+
+        }
+
         return result;
+
     }
 
     Vec3 rayTraceRecursive(Ray ray, int NRemainingBounces) {
         
         RaySceneIntersection raySceneIntersection = computeIntersection(ray);
-        if(NRemainingBounces >= 1) {
-            Vec3 newRay = rayTraceRecursive(ray,NRemainingBounces - 1);
+        Vec3 intersectionPoint(0.0f,0.0f,0.0f);
+        Vec3 normalToIntersectionPoint(0.0f,0.0f,0.0f);
+        Vec3 reflectedDirection(0.0f,0.0f,0.0f);
+        Vec3 color(1.0f,1.0f,1.0f); // Fond blanc
+        Vec3 ambient(0.0f,0.0f,0.0f);
+        Vec3 diffuse(0.0f,0.0f,0.0f);
+        Vec3 specular(0.0f,0.0f,0.0f);
+        Vec3 N(0.0f,0.0f,0.0f);
+        Vec3 L(0.0f,0.0f,0.0f);
+        Vec3 R(0.0f,0.0f,0.0f);
+        Vec3 V(0.0f,0.0f,0.0f);
+        Sphere currentSphere;
+        Square currentSquare;
+        Ray shadowRay;
+        RaySceneIntersection shadowIntersection;
+        float epsilon = 0.001f;
+        float distanceToLight;
+        int nbSamplesSmoothShadows = 10;
+        float shadowCounter = 0.0f;
+        float squareSide = 1.0f;
+        Vec3 sampledPointPosition(0.0f,0.0f,0.0f);
+        Vec3 lightDirectionForSampledPoint(0.0f,0.0f,0.0f);
+
+        if(!raySceneIntersection.intersectionExists) {
+            return color;
         }
-        Vec3 color;
+
+        switch(raySceneIntersection.typeOfIntersectedObject) {
+
+            case MeshType_Sphere:
+                shadowCounter = 0.0f;
+                currentSphere = spheres[raySceneIntersection.objectIndex];
+                intersectionPoint = raySceneIntersection.raySphereIntersection.intersection;
+                normalToIntersectionPoint = raySceneIntersection.raySphereIntersection.normal;
+                N = normalToIntersectionPoint;
+                L = lights[0].pos - intersectionPoint;
+                R = (2 * Vec3::dot(L,N) * N) - L;
+                V = ray.origin() - intersectionPoint;
+                N.normalize();
+                L.normalize();
+                R.normalize();
+                V.normalize();
+                ambient = currentSphere.material.ambient_material * lights[0].ambientPower;
+                for(int i = 0; i < nbSamplesSmoothShadows; i++) {
+                    sampledPointPosition = sampleAreaLight(lights[0], squareSide);
+                    lightDirectionForSampledPoint = sampledPointPosition - intersectionPoint;
+                    distanceToLight = lightDirectionForSampledPoint.length();
+                    lightDirectionForSampledPoint.normalize();
+                    shadowRay = Ray(intersectionPoint + epsilon * N, lightDirectionForSampledPoint);
+                    shadowIntersection = computeIntersection(shadowRay);
+                    if(!(shadowIntersection.intersectionExists && shadowIntersection.t < distanceToLight)) {
+                        shadowCounter += 1.0f;
+                    }
+                }
+                diffuse = currentSphere.material.diffuse_material * lights[0].diffusePower * Vec3::dot(L,N);
+                specular = currentSphere.material.specular_material * lights[0].specularPower * pow(Vec3::dot(R,V),currentSphere.material.shininess);
+            break;
+
+            case MeshType_Square:
+                shadowCounter = 0.0f;
+                currentSquare = squares[raySceneIntersection.objectIndex];
+                intersectionPoint = raySceneIntersection.raySquareIntersection.intersection;
+                normalToIntersectionPoint = raySceneIntersection.raySquareIntersection.normal;
+                N = normalToIntersectionPoint;
+                L = lights[0].pos - intersectionPoint;
+                R = (2 * Vec3::dot(L,N) * N) - L;
+                V = ray.origin() - intersectionPoint;
+                N.normalize();
+                L.normalize();
+                R.normalize();
+                V.normalize();
+                ambient = currentSquare.material.ambient_material * lights[0].ambientPower;
+                for(int i = 0; i < nbSamplesSmoothShadows; i++) {
+                    sampledPointPosition = sampleAreaLight(lights[0], squareSide);
+                    lightDirectionForSampledPoint = sampledPointPosition - intersectionPoint;
+                    distanceToLight = lightDirectionForSampledPoint.length();
+                    lightDirectionForSampledPoint.normalize();
+                    shadowRay = Ray(intersectionPoint + epsilon * N, lightDirectionForSampledPoint);
+                    shadowIntersection = computeIntersection(shadowRay);
+                    if(!(shadowIntersection.intersectionExists && shadowIntersection.t < distanceToLight)) {
+                        shadowCounter += 1.0f;
+                    }
+                }
+                diffuse = currentSquare.material.diffuse_material * lights[0].diffusePower * Vec3::dot(L,N);
+                specular = currentSquare.material.specular_material * lights[0].specularPower * pow(Vec3::dot(R,V),currentSquare.material.shininess);
+            break;
+
+            default:
+            break;
+
+        }
+
+        shadowCounter /= nbSamplesSmoothShadows;
+
+        diffuse *= shadowCounter;
+        specular *= shadowCounter;
+
+        color = ambient + diffuse + specular;
+
+        // Calcul de la direction du rayon réfléchi
+        reflectedDirection = ray.direction() - (2 * Vec3::dot(ray.direction(), normalToIntersectionPoint) * normalToIntersectionPoint);
+        
+        if(NRemainingBounces > 0) {
+            rayTraceRecursive(Ray(intersectionPoint,reflectedDirection),NRemainingBounces - 1);
+        }
+
         return color;
         
     }
 
 
-    Vec3 rayTrace( Ray const & rayStart ) {
+    Vec3 rayTrace(Ray const & rayStart) {
 
-        rayTraceRecursive(rayStart,3);
-        Vec3 color;
-        return color;
+        return rayTraceRecursive(rayStart,1);
 
     }
 
@@ -114,6 +290,9 @@ public:
             light.pos = Vec3(-5,5,5);
             light.radius = 2.5f;
             light.powerCorrection = 2.f;
+            light.ambientPower = 1.0f;
+            light.diffusePower = 1.0f;
+            light.specularPower = 0.4f;
             light.type = LightType_Spherical;
             light.material = Vec3(1,1,1);
             light.isInCamSpace = false;
@@ -121,13 +300,24 @@ public:
         {
             spheres.resize( spheres.size() + 1 );
             Sphere & s = spheres[spheres.size() - 1];
-            s.m_center = Vec3(0. , 0. , 0.);
+            s.m_center = Vec3(1.0 , 0. , 0.);
             s.m_radius = 1.f;
             s.build_arrays();
             s.material.type = Material_Mirror;
-            s.material.diffuse_material = Vec3( 1.,1.,1 );
+            s.material.diffuse_material = Vec3( 1.0,0.0,0.0 );
             s.material.specular_material = Vec3( 0.2,0.2,0.2 );
             s.material.shininess = 20;
+        }
+        {
+            spheres.resize(spheres.size() + 1);
+            Sphere &s2 = spheres[spheres.size() - 1];
+            s2.m_center = Vec3(-1.0f,0.0f,0.0f);
+            s2.m_radius = 1.0f;
+            s2.build_arrays();
+            s2.material.type = Material_Mirror;
+            s2.material.diffuse_material = Vec3(1.0f,1.0f,0.0f);
+            s2.material.specular_material = Vec3(0.2f,0.2f,0.2f);
+            s2.material.shininess = 20;
         }
     }
 
@@ -140,24 +330,39 @@ public:
         {
             lights.resize( lights.size() + 1 );
             Light & light = lights[lights.size() - 1];
-            light.pos = Vec3(-5,5,5);
+            light.pos = Vec3(-5, 5, 5);
             light.radius = 2.5f;
             light.powerCorrection = 2.f;
+            light.ambientPower = 0.5f;
+            light.diffusePower = 0.5f;
+            light.specularPower = 1.0f;
             light.type = LightType_Spherical;
             light.material = Vec3(1,1,1);
             light.isInCamSpace = false;
         }
-
         {
             squares.resize( squares.size() + 1 );
             Square & s = squares[squares.size() - 1];
             s.setQuad(Vec3(-1., -1., 0.), Vec3(1., 0, 0.), Vec3(0., 1, 0.), 2., 2.);
+            s.scale(Vec3(2.0f,2.0f,1.0f));
             s.build_arrays();
-            s.material.diffuse_material = Vec3( 0.8,0.8,0.8 );
+            s.material.diffuse_material = Vec3( 1,0.4,0.4 );
             s.material.specular_material = Vec3( 0.8,0.8,0.8 );
             s.material.shininess = 20;
         }
-    }
+
+        {
+            // squares.resize( squares.size() + 1 );
+            // Square & s2 = squares[squares.size() - 1];
+            // s2.setQuad(Vec3(0., -1., 0.), Vec3(1., 0, 0.), Vec3(0., 1, 0.), 2., 2.);
+            // s2.rotate_x(-45);
+            // s2.build_arrays();
+            // s2.material.diffuse_material = Vec3( 0.2,1,0.8 );
+            // s2.material.specular_material = Vec3( 0.8,0.8,0.8 );
+            // s2.material.shininess = 20;
+        }
+
+        }
 
     void setup_cornell_box(){
         meshes.clear();
@@ -168,9 +373,12 @@ public:
         {
             lights.resize( lights.size() + 1 );
             Light & light = lights[lights.size() - 1];
-            light.pos = Vec3( 0.0, 1.5, 0.0 );
+            light.pos = Vec3(0,1.5f,0);
             light.radius = 2.5f;
             light.powerCorrection = 2.f;
+            light.ambientPower = 1.0f;
+            light.diffusePower = 1.0f;
+            light.specularPower = 0.6f;
             light.type = LightType_Spherical;
             light.material = Vec3(1,1,1);
             light.isInCamSpace = false;
@@ -183,7 +391,7 @@ public:
             s.scale(Vec3(2., 2., 1.));
             s.translate(Vec3(0., 0., -2.));
             s.build_arrays();
-            s.material.diffuse_material = Vec3( 1.,1.,1. );
+            s.material.diffuse_material = Vec3( 0.3,0.2,0.5);
             s.material.specular_material = Vec3( 1.,1.,1. );
             s.material.shininess = 16;
         }
@@ -223,7 +431,7 @@ public:
             s.scale(Vec3(2., 2., 1.));
             s.rotate_x(-90);
             s.build_arrays();
-            s.material.diffuse_material = Vec3( 1.0,1.0,1.0 );
+            s.material.diffuse_material = Vec3( 1.0,0.0,1.0 );
             s.material.specular_material = Vec3( 1.0,1.0,1.0 );
             s.material.shininess = 16;
         }
@@ -236,23 +444,23 @@ public:
             s.scale(Vec3(2., 2., 1.));
             s.rotate_x(90);
             s.build_arrays();
-            s.material.diffuse_material = Vec3( 1.0,1.0,1.0 );
+            s.material.diffuse_material = Vec3( 0.0,0.0,1);
             s.material.specular_material = Vec3( 1.0,1.0,1.0 );
             s.material.shininess = 16;
         }
 
-        { //Front Wall
-            squares.resize( squares.size() + 1 );
-            Square & s = squares[squares.size() - 1];
-            s.setQuad(Vec3(-1., -1., 0.), Vec3(1., 0, 0.), Vec3(0., 1, 0.), 2., 2.);
-            s.translate(Vec3(0., 0., -2.));
-            s.scale(Vec3(2., 2., 1.));
-            s.rotate_y(180);
-            s.build_arrays();
-            s.material.diffuse_material = Vec3( 1.0,1.0,1.0 );
-            s.material.specular_material = Vec3( 1.0,1.0,1.0 );
-            s.material.shininess = 16;
-        }
+        // { //Front Wall
+        //     squares.resize( squares.size() + 1 );
+        //     Square & s = squares[squares.size() - 1];
+        //     s.setQuad(Vec3(-1., -1., 0.), Vec3(1., 0, 0.), Vec3(0., 1, 0.), 2., 2.);
+        //     s.translate(Vec3(0., 0., -3));
+        //     s.scale(Vec3(2., 2., 1.));
+        //     s.rotate_y(180);
+        //     s.build_arrays();
+        //     s.material.diffuse_material = Vec3( 1.0,0.0,0.0 );
+        //     s.material.specular_material = Vec3( 1.0,1.0,1.0 );
+        //     s.material.shininess = 16;
+        // }
 
 
         { //GLASS Sphere
