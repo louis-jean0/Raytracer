@@ -57,9 +57,6 @@ struct MeshTriangle {
     unsigned int v[3];
 };
 
-
-
-
 class Mesh {
 protected:
     void build_positions_array() {
@@ -108,7 +105,6 @@ public:
     void recomputeNormals ();
     void centerAndScaleToUnit ();
     void scaleUnit ();
-
 
     virtual
     void build_arrays() {
@@ -197,15 +193,40 @@ public:
 
     }
 
-    // RayTriangleIntersection intersect( Ray const & ray ) const {
-    //     RayTriangleIntersection closestIntersection;
-    //     closestIntersection.t = FLT_MAX;
-    //     // Note :
-    //     // Creer un objet Triangle pour chaque face
-    //     // Vous constaterez des problemes de précision
-    //     // solution : ajouter un facteur d'échelle lors de la création du Triangle : float triangleScaling = 1.000001;
-    //     return closestIntersection;
-    // }
+    RayTriangleIntersection intersect( Ray const & ray ) const {
+
+        RayTriangleIntersection closestIntersection;
+        closestIntersection.t = FLT_MAX;
+        // Note :
+        // Creer un objet Triangle pour chaque face
+        // Vous constaterez des problemes de précision
+        // solution : ajouter un facteur d'échelle lors de la création du Triangle : float triangleScaling = 1.000001;
+        float triangleScaling = 1.000001;
+        int nbTriangles = triangles.size();
+        for(int i = 0; i < nbTriangles; i++) {
+
+            unsigned int index0 = triangles_array[3 * i];
+            unsigned int index1 = triangles_array[3 * i + 1]; 
+            unsigned int index2 = triangles_array[3 * i + 2];
+
+            Vec3 vertex0(positions_array[3 * index0], positions_array[3 * index0 + 1], positions_array[3 * index0 + 2]);
+            Vec3 vertex1(positions_array[3 * index1], positions_array[3 * index1 + 1], positions_array[3 * index1 + 2]);
+            Vec3 vertex2(positions_array[3 * index2], positions_array[3 * index2 + 1], positions_array[3 * index2 + 2]);
+
+            Triangle currentTriangle = Triangle(vertex0*triangleScaling,vertex1*triangleScaling,vertex2*triangleScaling);
+
+            RayTriangleIntersection currentIntersection = currentTriangle.getIntersection(ray);
+
+            if(currentIntersection.intersectionExists && currentIntersection.t < closestIntersection.t) {
+                closestIntersection = currentIntersection;
+                currentIntersection.tIndex = i;
+            }
+
+        }
+
+        return closestIntersection;
+
+    }
 };
 
 

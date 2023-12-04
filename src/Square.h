@@ -75,27 +75,25 @@ public:
         
         Plane squarePlane(bottomLeft,normal);
         Vec3 squarePlaneIntersection = squarePlane.getIntersectionPoint(ray);
-        
-        if(!squarePlane.isParallelTo(ray)) {
 
-            Vec3 localIntersectionVector = squarePlaneIntersection - bottomLeft;
+        if(squarePlane.isParallelTo(ray)) return intersection;
 
-            float u_intersection = Vec3::dot(localIntersectionVector,rightVector) / rightVector.squareLength();
-            float v_intersection = Vec3::dot(localIntersectionVector,upVector) / upVector.squareLength();
+        Vec3 localIntersectionVector = squarePlaneIntersection - bottomLeft;
 
-            if(u_intersection >= 0.0f && u_intersection <= 1.0f && v_intersection >= 0.0f && v_intersection <= 1.0f) {
+        float u_intersection = Vec3::dot(localIntersectionVector,rightVector) / rightVector.squareLength();
+        float v_intersection = Vec3::dot(localIntersectionVector,upVector) / upVector.squareLength();
 
-                float t = (squarePlaneIntersection - ray.origin()).length();
+        if(u_intersection >= 0.0f && u_intersection <= 1.0f && v_intersection >= 0.0f && v_intersection <= 1.0f) {
 
-                if(t > epsilon) {
-                    intersection.intersectionExists = true;
-                    intersection.t = t;
-                    intersection.u = u_intersection;
-                    intersection.v = v_intersection;
-                    intersection.intersection = squarePlaneIntersection;
-                    intersection.normal = normal;
-                }
+            float t = (squarePlaneIntersection - ray.origin()).length();
 
+            if(t > epsilon) {
+                intersection.intersectionExists = true;
+                intersection.t = t;
+                intersection.u = u_intersection;
+                intersection.v = v_intersection;
+                intersection.intersection = squarePlaneIntersection;
+                intersection.normal = normal;
             }
 
         }

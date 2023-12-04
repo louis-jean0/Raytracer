@@ -22,6 +22,58 @@ void Mesh::loadOFF (const std::string & filename) {
     in.close ();
 }
 
+// void Mesh::loadOFF(const std::string &filename) {
+//     std::ifstream in(filename.c_str());
+//     if (!in) {
+//         std::cerr << "Cannot open file: " << filename << std::endl;
+//         exit(EXIT_FAILURE);
+//     }
+    
+//     std::string offString;
+//     unsigned int sizeV, sizeT, tmp;
+//     in >> offString;
+//     if (offString != "OFF") {
+//         std::cerr << "File is not a valid OFF file: " << filename << std::endl;
+//         exit(EXIT_FAILURE);
+//     }
+    
+//     in >> sizeV >> sizeT >> tmp;
+//     if (!in) {
+//         std::cerr << "Reading sizes failed!" << std::endl;
+//         exit(EXIT_FAILURE);
+//     }
+
+//     vertices.resize(sizeV);
+//     for (unsigned int i = 0; i < sizeV; i++) {
+//         if (!(in >> vertices[i].position)) {
+//             std::cerr << "Reading vertex " << i << " failed!" << std::endl;
+//             exit(EXIT_FAILURE);
+//         }
+//     }
+
+//     int s;
+//     for (unsigned int i = 0; i < sizeT; i++) {
+//         in >> s;
+//         if (s != 3) {
+//             std::cerr << "Face " << i << " is not a triangle!" << std::endl;
+//             exit(EXIT_FAILURE);
+//         }
+//         for (unsigned int j = 0; j < 3; j++) {
+//             if (!(in >> triangles[i].v[j])) {
+//                 std::cerr << "Reading triangle " << i << " failed!" << std::endl;
+//                 exit(EXIT_FAILURE);
+//             }
+//         }
+//     }
+
+//     in.close();
+//     if (!in) {
+//         std::cerr << "File was not closed properly!" << std::endl;
+//         exit(EXIT_FAILURE);
+//     }
+// }
+
+
 void Mesh::recomputeNormals () {
     for (unsigned int i = 0; i < vertices.size (); i++)
         vertices[i].normal = Vec3 (0.0, 0.0, 0.0);

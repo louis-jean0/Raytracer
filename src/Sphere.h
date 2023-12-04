@@ -31,8 +31,6 @@ Vec3 EuclideanCoordinatesToSpherical( Vec3 xyz ) {
     return Vec3( theta , phi , R );
 }
 
-
-
 class Sphere : public Mesh {
 public:
     Vec3 m_center;
@@ -81,7 +79,6 @@ public:
         }
     }
 
-
     RaySphereIntersection intersect(const Ray &ray) const {
         
         RaySphereIntersection intersection;
@@ -98,10 +95,10 @@ public:
         }
 
         else {
-
+            float sqrtDelta = sqrt(delta);
             intersection.intersectionExists = true;
-            float t1 = (-b - sqrt(delta)) / (2*a);
-            float t2 = (-b + sqrt(delta)) / (2*a);
+            float t1 = (-b - sqrtDelta) / (2*a);
+            float t2 = (-b + sqrtDelta) / (2*a);
             float tmin = (t1 > epsilon) ? t1 : t2;
             float tmax = (t1 > tmin) ? t1 : t2;
             if(tmin > epsilon) {
