@@ -95,7 +95,6 @@ public:
 
     }
 
-
     // void computeBarycentricCoordinates(Vec3 const &p , float &u0 , float &u1 , float &u2) const {
     //     //TODO Complete
     //     Vec3 A = m_c[0];

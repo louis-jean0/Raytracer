@@ -252,16 +252,7 @@ public:
             {
                 currentMesh = meshes[raySceneIntersection.objectIndex];
                 intersectionPoint = raySceneIntersection.rayMeshIntersection.intersection;
-                unsigned int triangleIndex = raySceneIntersection.rayMeshIntersection.tIndex;
-                Vec3 normal0 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[0]].normal;
-                Vec3 normal1 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[1]].normal;
-                Vec3 normal2 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[2]].normal;
-                Vec3 interpolatedNormal =   raySceneIntersection.rayMeshIntersection.w0 * normal0 +
-                                            raySceneIntersection.rayMeshIntersection.w1 * normal1 +
-                                            raySceneIntersection.rayMeshIntersection.w2 * normal2;
-                interpolatedNormal.normalize();
-                //normalToIntersectionPoint = raySceneIntersection.rayMeshIntersection.normal;
-                normalToIntersectionPoint = interpolatedNormal;
+                normalToIntersectionPoint = raySceneIntersection.rayMeshIntersection.normal;
             }
             break;
 
@@ -628,7 +619,7 @@ public:
         {
             meshes.resize(meshes.size() + 1);
             Mesh &mesh = meshes[meshes.size() - 1];
-            mesh.loadOFF("models/tetrahedron.off");
+            mesh.loadOFF("models/pipe.off");
             mesh.build_arrays();
             // mesh.recomputeNormals();
             // mesh.centerAndScaleToUnit();

@@ -209,17 +209,22 @@ public:
             unsigned int index1 = triangles_array[3 * i + 1]; 
             unsigned int index2 = triangles_array[3 * i + 2];
 
-            Vec3 vertex0(positions_array[3 * index0], positions_array[3 * index0 + 1], positions_array[3 * index0 + 2]);
-            Vec3 vertex1(positions_array[3 * index1], positions_array[3 * index1 + 1], positions_array[3 * index1 + 2]);
-            Vec3 vertex2(positions_array[3 * index2], positions_array[3 * index2 + 1], positions_array[3 * index2 + 2]);
+            MeshVertex vertex0 = vertices[index0];
+            MeshVertex vertex1 = vertices[index1];
+            MeshVertex vertex2 = vertices[index2];
 
-            Triangle currentTriangle = Triangle(vertex0*triangleScaling,vertex1*triangleScaling,vertex2*triangleScaling);
+            Triangle currentTriangle = Triangle(vertex0.position*triangleScaling,vertex1.position*triangleScaling,vertex2.position*triangleScaling);
 
             RayTriangleIntersection currentIntersection = currentTriangle.getIntersection(ray);
 
             if(currentIntersection.intersectionExists && currentIntersection.t < closestIntersection.t) {
                 closestIntersection = currentIntersection;
                 currentIntersection.tIndex = i;
+                Vec3 interpolatedNormal =   currentIntersection.w0 * vertex0.normal +
+                                            currentIntersection.w1 * vertex1.normal +
+                                            currentIntersection.w2 * vertex2.normal;
+                interpolatedNormal.normalize();
+                closestIntersection.normal = interpolatedNormal;
             }
 
         }
