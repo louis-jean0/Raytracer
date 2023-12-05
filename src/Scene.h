@@ -209,6 +209,7 @@ public:
         Vec3 normalToIntersectionPoint(0.0f,0.0f,0.0f);
         Vec3 reflectedDirection(0.0f,0.0f,0.0f);
         Vec3 color(1.0f,1.0f,1.0f); // Fond blanc
+        //Vec3 color(0.0f,0.0f,0.0f); // Fond noir
         Vec3 ambient(0.0f,0.0f,0.0f);
         Vec3 diffuse(0.0f,0.0f,0.0f);
         Vec3 specular(0.0f,0.0f,0.0f);
@@ -251,7 +252,7 @@ public:
             {
                 currentMesh = meshes[raySceneIntersection.objectIndex];
                 intersectionPoint = raySceneIntersection.rayMeshIntersection.intersection;
-                unsigned int triangleIndex = raySceneIntersection.rayMeshIntersection.tIndex; // Assurez-vous d'avoir l'indice du triangle
+                unsigned int triangleIndex = raySceneIntersection.rayMeshIntersection.tIndex;
                 Vec3 normal0 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[0]].normal;
                 Vec3 normal1 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[1]].normal;
                 Vec3 normal2 = currentMesh.vertices[currentMesh.triangles[triangleIndex].v[2]].normal;
@@ -259,7 +260,8 @@ public:
                                             raySceneIntersection.rayMeshIntersection.w1 * normal1 +
                                             raySceneIntersection.rayMeshIntersection.w2 * normal2;
                 interpolatedNormal.normalize();
-                normalToIntersectionPoint = raySceneIntersection.rayMeshIntersection.normal;
+                //normalToIntersectionPoint = raySceneIntersection.rayMeshIntersection.normal;
+                normalToIntersectionPoint = interpolatedNormal;
             }
             break;
 
@@ -301,9 +303,9 @@ public:
         if (m.type == Material_Mirror) {
 
             if (NRemainingBounces > 0) {
-                color += m.shininess * rayTraceRecursive(Ray(intersectionPoint + epsilon * N, reflectedDirection), NRemainingBounces - 1);
+                color = rayTraceRecursive(Ray(intersectionPoint + epsilon * N, reflectedDirection), NRemainingBounces - 1);
             } else {
-                color += Vec3(0.0f, 0.0f, 0.0f);
+                color = Vec3(0.0f, 0.0f, 0.0f);
             }
 
         } 
@@ -321,7 +323,7 @@ public:
             color = ambient + diffuse + specular;
             
             if(NRemainingBounces > 0) {
-                color += rayTraceRecursive(Ray(intersectionPoint,reflectedDirection),NRemainingBounces - 1);
+                rayTraceRecursive(Ray(intersectionPoint,reflectedDirection),NRemainingBounces - 1);
             }
 
         }
@@ -332,7 +334,7 @@ public:
 
     Vec3 rayTrace(Ray const & rayStart) {
 
-        return rayTraceRecursive(rayStart,1);
+        return rayTraceRecursive(rayStart,2);
 
     }
 
@@ -452,6 +454,7 @@ public:
             s.material.diffuse_material = Vec3( 0.3,0.2,0.5);
             s.material.specular_material = Vec3( 1.,1.,1. );
             s.material.shininess = 16;
+            s.material.type = Material_Mirror;
         }
 
         { //Left Wall
@@ -531,7 +534,7 @@ public:
             s.material.type = Material_Mirror;
             s.material.diffuse_material = Vec3( 1.,0.,0. );
             s.material.specular_material = Vec3( 1.,0.,0. );
-            s.material.shininess = 16;
+            s.material.shininess = 5;
             s.material.transparency = 1.0;
             s.material.index_medium = 1.4;
         }
@@ -543,10 +546,10 @@ public:
             s.m_center = Vec3(-1.0, -1.25, -0.5);
             s.m_radius = 0.75f;
             s.build_arrays();
-            s.material.type = Material_Glass;
+            s.material.type = Material_Mirror;
             s.material.diffuse_material = Vec3( 1.,1.,1. );
             s.material.specular_material = Vec3(  1.,1.,1. );
-            s.material.shininess = 16;
+            s.material.shininess = 10;
             s.material.transparency = 0.;
             s.material.index_medium = 0.;
         }
@@ -625,7 +628,7 @@ public:
         {
             meshes.resize(meshes.size() + 1);
             Mesh &mesh = meshes[meshes.size() - 1];
-            mesh.loadOFF("models/pipe.off");
+            mesh.loadOFF("models/tetrahedron.off");
             mesh.build_arrays();
             // mesh.recomputeNormals();
             // mesh.centerAndScaleToUnit();
