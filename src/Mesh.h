@@ -115,6 +115,20 @@ public:
         build_triangles_array();
     }
 
+    std::vector<Triangle> getTriangles() const {
+        std::vector<Triangle> tris;
+        tris.reserve(triangles.size());
+
+        for (const MeshTriangle& tri : triangles) {
+            Vec3 v0 = vertices[tri.v[0]].position;
+            Vec3 v1 = vertices[tri.v[1]].position;
+            Vec3 v2 = vertices[tri.v[2]].position;
+            tris.emplace_back(v0, v1, v2);
+        }
+        
+        return tris;
+    }
+
 
     void translate( Vec3 const & translation ){
         for( unsigned int v = 0 ; v < vertices.size() ; ++v ) {
@@ -160,6 +174,18 @@ public:
                         sin(z_angle), cos(z_angle), 0.,
                         0., 0., 1.);
         apply_transformation_matrix( z_rotation );
+    }
+
+    Vec3 getCenter() const {
+        Vec3 center(0.0f,0.0f,0.0f);
+        if(vertices.empty()) {
+            return center;
+        }
+        for(const auto& vertex : vertices) {
+            center += vertex.position;
+        }
+        center /= (float)vertices.size();
+        return center;
     }
 
 

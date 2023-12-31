@@ -84,6 +84,15 @@ public:
         res[c2] = -mVals[c1];
         return res;
     }
+    // Fonction statique pour obtenir le minimum de deux vecteurs composante par composante
+    static Vec3 min(const Vec3& a, const Vec3& b) {
+        return Vec3(std::min(a[0], b[0]), std::min(a[1], b[1]), std::min(a[2], b[2]));
+    }
+
+    // Fonction statique pour obtenir le maximum de deux vecteurs composante par composante
+    static Vec3 max(const Vec3& a, const Vec3& b) {
+        return Vec3(std::max(a[0], b[0]), std::max(a[1], b[1]), std::max(a[2], b[2]));
+    }
 };
 
 static inline Vec3 operator + (Vec3 const & a , Vec3 const & b) {

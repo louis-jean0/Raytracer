@@ -63,7 +63,6 @@ void usage () {
     exit (EXIT_FAILURE);
 }
 
-
 // ------------------------------------
 void initLight () {
     GLfloat light_position[4] = {0.0, 1.5, 0.0, 1.0};
@@ -277,11 +276,6 @@ void reshape(int w, int h) {
     camera.resize (w, h);
 }
 
-
-
-
-
-
 int main (int argc, char ** argv) {
     if (argc > 2) {
         printUsage ();
@@ -303,12 +297,18 @@ int main (int argc, char ** argv) {
 
     camera.move(0., 0., -3.1);
     selected_scene=0;
-    scenes.resize(5);
+    scenes.resize(6);
     scenes[0].setup_single_sphere();
     scenes[1].setup_single_square();
     scenes[2].setup_cornell_box();
     scenes[3].setup_single_triangle();
     scenes[4].setup_simple_mesh();
+    scenes[5].setup_large_scene();
+    // for(auto& scene : scenes) {
+    //     scene.buildKdTreeForScene();
+    // }
+    //scenes[3].buildKdTreeForScene();
+    scenes[4].buildKdTreeForScene();
 
     glutMainLoop ();
     return EXIT_SUCCESS;

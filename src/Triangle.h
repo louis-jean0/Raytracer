@@ -4,6 +4,7 @@
 #include "Ray.h"
 #include "Plane.h"
 #include <optional>
+#include <vector>
 
 struct RayTriangleIntersection{
     bool intersectionExists;
@@ -32,6 +33,19 @@ public:
         m_normal = nNotNormalized / norm;
         area = norm / 2.f;
     }
+
+    Vec3 getCenter() const {
+        return (m_c[0] + m_c[1] + m_c[2]) / 3.0f;
+    }
+
+    std::vector<Vec3> getVertices() {
+        std::vector<Vec3> vertices;
+        vertices.push_back(m_c[0]);
+        vertices.push_back(m_c[1]);
+        vertices.push_back(m_c[2]);
+        return vertices;
+    }
+
     void setC0(Vec3 const & c0) { m_c[0] = c0; } // remember to update the area and normal afterwards!
     void setC1(Vec3 const & c1) { m_c[1] = c1; } // remember to update the area and normal afterwards!
     void setC2(Vec3 const & c2) { m_c[2] = c2; } // remember to update the area and normal afterwards!
