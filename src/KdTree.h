@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 #include <algorithm>
-#define MAX_DEPTH 500
+#define MAX_DEPTH 6
 #define MIN_TRIANGLES 1
 
 class KdTree {
@@ -29,7 +29,10 @@ class KdTree {
                 deleteTree(root);
             }
 
+            if(meshes.empty()) return;
+
             std::vector<Triangle> allTriangles;
+            std::vector<Vec3> verticesNormals;
 
             for (const auto& mesh : meshes) {
                 auto meshTriangles = mesh.getTriangles();
@@ -52,42 +55,6 @@ class KdTree {
             });
         }
 
-        float computeMedian(const std::vector<Triangle> &triangles, int axis) {
-            if (triangles.empty()) {
-                return 0.0f;
-            }
-
-            std::vector<float> values;
-            values.resize(triangles.size());
-
-            for (const Triangle &tri : triangles) {
-                Vec3 center = tri.getCenter();
-                values.push_back(center[axis]);
-            }
-
-            size_t n = values.size() / 2;
-            std::nth_element(values.begin(), values.begin() + n, values.end()); // Pour trouver la médiane sans avoir à tout trier
-            float median = values[n];
-
-            // Si le nombre de triangles est pair, trouvez les deux médianes centrales et prenez la moyenne.
-            if (values.size() % 2 == 0) {
-                std::nth_element(values.begin(), values.begin() + n - 1, values.begin() + n);
-                median = (median + values[n - 1]) * 0.5f;
-            }
-            return median;
-        }
-
-        void divideTrianglesAtMedian(const std::vector<Triangle>& triangles, int axis, float median, std::vector<Triangle>& leftChildTriangles, std::vector<Triangle>& rightChildTriangles) {
-            for (const Triangle& tri : triangles) {
-                Vec3 center = tri.getCenter();
-                if (center[axis] <= median) {
-                    leftChildTriangles.push_back(tri);
-                } else {
-                    rightChildTriangles.push_back(tri);
-                }
-            }
-        }
-
         bool intersect(const Ray &ray, RayTriangleIntersection &intersection) {
             return traverseTree(root, ray, intersection);
         }
@@ -100,6 +67,13 @@ class KdTree {
                 RayTriangleIntersection tempIntersection = tri.getIntersection(ray);
                 if (tempIntersection.intersectionExists && tempIntersection.t < closestDistance) {
                     closestDistance = tempIntersection.t;
+                    std::vector<Vec3> verticesNormals = tri.getVerticesNormals();
+                    Vec3 interpolatedNormal = tempIntersection.w0 * verticesNormals[0]
+                                            + tempIntersection.w1 * verticesNormals[1]
+                                            + tempIntersection.w2 * verticesNormals[2];
+                    interpolatedNormal.normalize();
+                    tempIntersection.normal = interpolatedNormal;
+                    tempIntersection.tIndex = tri.getMeshIndex();
                     intersection = tempIntersection;
                     hit = true;
                 }
@@ -129,7 +103,7 @@ class KdTree {
         KdNode* buildRecursiveKdTree(const std::vector<Triangle> &triangles, const AABB& box, int depth) {
             KdNode* node = new KdNode();
             node->setBox(box);
-            std::cout << "Profondeur : " << depth << ", Nombre de triangles : " << triangles.size() << std::endl;
+            //std::cout << "Profondeur : " << depth << ", Nombre de triangles : " << triangles.size() << std::endl;
 
             if(depth >= MAX_DEPTH || triangles.size() <= MIN_TRIANGLES) {
                 node->setLeaf(true);
@@ -139,27 +113,20 @@ class KdTree {
 
             int currentAxis = depth % 3; // Pour alterner selon les trois axes
             
-            // Triez les triangles en fonction de l'axe actuel et calculez la médiane
+            // Tri des triangles
             std::vector<Triangle> sortedTriangles = triangles;
             sortTrianglesByAxis(sortedTriangles, currentAxis);
-            float median = computeMedian(sortedTriangles, currentAxis);
-
             size_t medianIndex = sortedTriangles.size() / 2;
             Triangle medianTriangle = sortedTriangles[medianIndex];
 
             std::vector<Triangle> leftChildTriangles(sortedTriangles.begin(), sortedTriangles.begin() + medianIndex);
             std::vector<Triangle> rightChildTriangles(sortedTriangles.begin() + medianIndex, sortedTriangles.end());
 
-            // Divisez les triangles en fonction de la médiane
-            // std::vector<Triangle> leftChildTriangles;
-            // std::vector<Triangle> rightChildTriangles;
-            // divideTrianglesAtMedian(triangles, median, currentAxis, leftChildTriangles, rightChildTriangles);
-
-            // Calculez les boîtes englobantes pour les enfants gauche et droit
+            // Boîtes englobantes pour les enfants gauche et droit
             AABB leftChildBox = AABB::computeGlobalBox(leftChildTriangles);
             AABB rightChildBox = AABB::computeGlobalBox(rightChildTriangles);
 
-            // Construisez récursivement les sous-arbres pour les enfants gauche et droit
+            // Construction récursive des sous-arbres pour les enfants gauche et droit
             node->setLeftChild(buildRecursiveKdTree(leftChildTriangles, leftChildBox, depth + 1));
             node->setRightChild(buildRecursiveKdTree(rightChildTriangles, rightChildBox, depth + 1));
             // std::cout<<"Noeud gauche : "<<node->getLeftChild()->getTriangles().size()<<std::endl;
@@ -170,16 +137,13 @@ class KdTree {
                 // Englobe les boîtes des enfants gauche et droit
                 node->setBox(AABB::combine(node->getLeftChild()->getBox(), node->getRightChild()->getBox()));
             } else if (node->getLeftChild()) {
-                // Si seulement un enfant gauche, utilisez son AABB
                 node->setBox(node->getLeftChild()->getBox());
             } else if (node->getRightChild()) {
-                // Si seulement un enfant droit, utilisez son AABB
                 node->setBox(node->getRightChild()->getBox());
             }
 
             return node;
         }
-
 
         bool traverseTree(KdNode* node, const Ray &ray, RayTriangleIntersection &intersection) {
             if(node == nullptr) {
@@ -194,10 +158,25 @@ class KdTree {
                 return false;
             }
 
-            bool hitLeft = traverseTree(node->getLeftChild(), ray, intersection);
-            bool hitRight = traverseTree(node->getRightChild(), ray, intersection);
+            RayTriangleIntersection leftIntersection,rightIntersection;
+            bool hitLeft = traverseTree(node->getLeftChild(), ray, leftIntersection);
+            bool hitRight = traverseTree(node->getRightChild(), ray, rightIntersection);
 
-            return hitLeft || hitRight;
+            if(hitLeft && hitRight) {
+                if(leftIntersection.t < rightIntersection.t) {
+                    intersection = leftIntersection;
+                } else {
+                    intersection = rightIntersection;
+                }
+                return true;
+            } else if(hitLeft) {
+                intersection = leftIntersection;
+                return true;
+            } else if(hitRight) {
+                intersection = rightIntersection;
+                return true;
+            }
+
+            return false;
         }
-        
 };

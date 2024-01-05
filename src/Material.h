@@ -1,18 +1,14 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include "imageLoader.h"
 #include "Vec3.h"
 #include <cmath>
-
-#include <GL/glut.h>
 
 enum MaterialType {
     Material_Diffuse_Blinn_Phong ,
     Material_Glass,
     Material_Mirror
 };
-
 
 struct Material {
     Vec3 ambient_material;
@@ -32,7 +28,5 @@ struct Material {
         ambient_material = Vec3(0., 0., 0.);
     }
 };
-
-
 
 #endif // MATERIAL_H

@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -15,10 +16,7 @@
 
 using namespace std;
 
-#include "src/imageLoader.h"
-
 #include "src/Material.h"
-
 
 // -------------------------------------------
 // OpenGL/GLUT application code.
@@ -31,6 +29,7 @@ static Camera camera;
 static bool mouseRotatePressed = false;
 static bool mouseMovePressed = false;
 static bool mouseZoomPressed = false;
+static bool depthOfField = false;
 static int lastX=0, lastY=0, lastZoom=0;
 static unsigned int FPS = 0;
 static bool fullScreen = false;
@@ -52,6 +51,8 @@ void printUsage () {
          << " w: Toggle Wireframe Mode" << endl
          << " g: Toggle Gouraud Shading Mode" << endl
          << " f: Toggle full screen mode" << endl
+         << " k: Display AABBs (meshes only)" << endl
+         << " d: Toggle depth of field (render then)" << endl
          << " <drag>+<left button>: rotate model" << endl
          << " <drag>+<right button>: move model" << endl
          << " <drag>+<middle button>: zoom" << endl
@@ -103,7 +104,6 @@ void clear () {
 // functions for alternative rendering.
 // ------------------------------------
 
-
 void draw () {
     glEnable(GL_LIGHTING);
     scenes[selected_scene].draw();
@@ -152,7 +152,7 @@ void ray_trace_from_camera() {
     int w = glutGet(GLUT_WINDOW_WIDTH)  ,   h = glutGet(GLUT_WINDOW_HEIGHT);
     std::cout << "Ray tracing a " << w << " x " << h << " image" << std::endl;
     camera.apply();
-    Vec3 pos , dir;
+    Vec3 pos , dir, color;
     //    unsigned int nsamples = 100;
     unsigned int nsamples = 50;
     std::vector< Vec3 > image( w*h , Vec3(0,0,0) );
@@ -163,7 +163,17 @@ void ray_trace_from_camera() {
                 float v = ((float)(y) + (float)(rand())/(float)(RAND_MAX)) / h;
                 // this is a random uv that belongs to the pixel xy.
                 screen_space_to_world_space_ray(u,v,pos,dir);
-                Vec3 color = scenes[selected_scene].rayTrace( Ray(pos , dir) );
+                if(depthOfField) {
+                    Vec3 randomPointOnLens = camera.getLensRadius() * Camera::random_in_unit_disk();
+                    Vec3 focalPoint = pos + dir * camera.getFocalDistance();
+                    Vec3 newOrigin = pos + randomPointOnLens;
+                    Vec3 newDirection = focalPoint - newOrigin;
+                    newDirection.normalize();
+                    color = scenes[selected_scene].rayTrace( Ray(newOrigin , newDirection));
+                }
+                else {
+                    color = scenes[selected_scene].rayTrace( Ray(pos , dir));
+                }
                 image[x + y*w] += color;
             }
             image[x + y*w] /= nsamples;
@@ -183,7 +193,6 @@ void ray_trace_from_camera() {
     f << std::endl;
     f.close();
 }
-
 
 void key (unsigned char keyPressed, int x, int y) {
     Vec3 pos , dir;
@@ -210,7 +219,6 @@ void key (unsigned char keyPressed, int x, int y) {
         else
             glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
         break;
-
     case 'r':
         camera.apply();
         rays.clear();
@@ -219,6 +227,18 @@ void key (unsigned char keyPressed, int x, int y) {
     case '+':
         selected_scene++;
         if( selected_scene >= scenes.size() ) selected_scene = 0;
+        break;
+    case 'k':
+        scenes[selected_scene].drawABBS = !scenes[selected_scene].drawABBS;
+        break;
+    case 'd':
+        if(depthOfField) {
+            std::cout<<"Profondeur de champ désactivée pour le rendu"<<std::endl;
+        }
+        else {
+            std::cout<<"Profondeur de champ activée pour le rendu (réglages dans le main)"<<std::endl;
+        }
+        depthOfField = !depthOfField;
         break;
     default:
         printUsage ();
@@ -271,7 +291,6 @@ void motion (int x, int y) {
     }
 }
 
-
 void reshape(int w, int h) {
     camera.resize (w, h);
 }
@@ -295,20 +314,20 @@ int main (int argc, char ** argv) {
     glutMouseFunc (mouse);
     key ('?', 0, 0);
 
-    camera.move(0., 0., -3.1);
+    camera.setLensRadius(0.5f);
+    camera.setFocalDistance(4.5f);
+    camera.move(0., 0., -3.0f); // ATTENTION : La caméra est en fait en (0,0,6)
     selected_scene=0;
     scenes.resize(6);
     scenes[0].setup_single_sphere();
     scenes[1].setup_single_square();
     scenes[2].setup_cornell_box();
-    scenes[3].setup_single_triangle();
+    scenes[3].setup_dof_scene();
     scenes[4].setup_simple_mesh();
     scenes[5].setup_large_scene();
-    // for(auto& scene : scenes) {
-    //     scene.buildKdTreeForScene();
-    // }
-    //scenes[3].buildKdTreeForScene();
-    scenes[4].buildKdTreeForScene();
+    for(auto& scene : scenes) {
+        scene.buildKdTreeForScene();
+    }
 
     glutMainLoop ();
     return EXIT_SUCCESS;

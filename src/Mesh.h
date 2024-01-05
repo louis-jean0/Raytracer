@@ -1,13 +1,13 @@
 #ifndef MESH_H
 #define MESH_H
 
-
+#include "Material.h"
+#include <GL/gl.h>
 #include <vector>
 #include <string>
 #include "Vec3.h"
 #include "Ray.h"
 #include "Triangle.h"
-#include "Material.h"
 
 #include <GL/glut.h>
 
@@ -98,6 +98,7 @@ public:
     std::vector< float > normalsArray;
     std::vector< float > uvs_array;
     std::vector< unsigned int > triangles_array;
+    int meshIndex;
 
     Material material;
 
@@ -123,7 +124,10 @@ public:
             Vec3 v0 = vertices[tri.v[0]].position;
             Vec3 v1 = vertices[tri.v[1]].position;
             Vec3 v2 = vertices[tri.v[2]].position;
-            tris.emplace_back(v0, v1, v2);
+            Vec3 n0 = vertices[tri.v[0]].normal;
+            Vec3 n1 = vertices[tri.v[1]].normal;
+            Vec3 n2 = vertices[tri.v[2]].normal;
+            tris.emplace_back(v0, v1, v2, n0, n1, n2, meshIndex);
         }
         
         return tris;
@@ -188,7 +192,6 @@ public:
         return center;
     }
 
-
     void draw() const {
         if( triangles_array.size() == 0 ) return;
         GLfloat material_color[4] = {material.diffuse_material[0],
@@ -219,7 +222,7 @@ public:
 
     }
 
-    RayTriangleIntersection intersect( Ray const & ray ) const {
+    RayTriangleIntersection intersect(Ray const & ray) const {
 
         RayTriangleIntersection closestIntersection;
         closestIntersection.t = FLT_MAX;

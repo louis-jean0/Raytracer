@@ -1,8 +1,10 @@
 #include "Vec3.h"
 #include "Ray.h"
 #include "Mesh.h"
+#include <GL/gl.h>
 #include <cfloat>
 #include <vector>
+#include <algorithm>
 
 class AABB {
     public:
@@ -16,34 +18,71 @@ class AABB {
 
         ~AABB() = default;
 
+        // Version de base
+        // // Intersection avec une AABB
+        // bool intersect(const Ray &ray) {
+        //     Vec3 origin = ray.origin();
+        //     Vec3 direction = ray.direction();
+        //     direction.normalize();
+
+        //     float txmin = (min[0] - origin[0]) / direction[0];
+        //     float txmax = (max[0] - origin[0]) / direction[0];
+
+        //     if(txmin > txmax) std::swap(txmin,txmax);
+
+        //     float tymin = (min[1] - origin[1]) / direction[1];
+        //     float tymax = (max[1] - origin[1]) / direction[1];
+
+        //     if(tymin > tymax) std::swap(tymin,tymax);
+
+        //     float tzmin = (min[2] - origin[2]) / direction[2];
+        //     float tzmax = (max[2] - origin[2]) / direction[2];
+
+        //     if(tzmin > tzmax) std::swap(tzmin,tzmax);
+
+        //     if(txmin > tzmax || tzmin > txmax) return false;
+
+        //     if(tzmin > txmin) txmin = tzmin;
+
+        //     if(tzmax < txmax) txmax = tzmax;
+
+        //     return true;
+        // }
+
+        // Version optimisée
         // Intersection avec une AABB
         bool intersect(const Ray &ray) {
             Vec3 origin = ray.origin();
             Vec3 direction = ray.direction();
-            direction.normalize();
+            Vec3 invDir;
 
-            float txmin = (min[0] - origin[0]) / direction[0];
-            float txmax = (max[0] - origin[0]) / direction[0];
+            for (int i = 0; i < 3; ++i) {
+                if (direction[i] != 0.0f) {
+                    invDir[i] = 1.0f / direction[i];
+                } else {
+                    invDir[i] = direction[i] > 0 ? FLT_MAX : -FLT_MAX;
+                }
+            }
 
-            if(txmin > txmax) std::swap(txmin,txmax);
+            float t[6]; // txmin, txmax, tymin, tymax, tzmin, tzmax
 
-            float tymin = (min[1] - origin[1]) / direction[1];
-            float tymax = (max[1] - origin[1]) / direction[1];
+            for (int i = 0; i < 3; ++i) {
+                if (std::abs(invDir[i]) < FLT_EPSILON) {
+                    // Le rayon est parallèle à la face de l'AABB sur cet axe
+                    t[i * 2] = (min[i] - origin[i]) > 0 ? -FLT_MAX : FLT_MAX;
+                    t[i * 2 + 1] = (max[i] - origin[i]) > 0 ? FLT_MAX : -FLT_MAX;
+                } else {
+                    t[i * 2] = (min[i] - origin[i]) * invDir[i];
+                    t[i * 2 + 1] = (max[i] - origin[i]) * invDir[i];
+                }
 
-            if(tymin > tymax) std::swap(tymin,tymax);
+                if (t[i * 2] > t[i * 2 + 1]) std::swap(t[i * 2], t[i * 2 + 1]);
+            }
 
-            float tzmin = (min[2] - origin[2]) / direction[2];
-            float tzmax = (max[2] - origin[2]) / direction[2];
+            float tmin = std::max({t[0], t[2], t[4]});
+            float tmax = std::min({t[1], t[3], t[5]});
 
-            if(tzmin > tzmax) std::swap(tzmin,tzmax);
-
-            if(txmin > tzmax || tzmin > txmax) return false;
-
-            if(tzmin > txmin) txmin = tzmin;
-
-            if(tzmax < txmax) txmax = tzmax;
-
-            return true;
+            return tmax >= tmin && tmax >= 0.0f;
         }
 
         static AABB computeGlobalBox(const std::vector<Triangle>& triangles) {
@@ -79,9 +118,10 @@ class AABB {
             corners[7] = Vec3(max[0], max[1], max[2]);
 
             
+            glLineWidth(1.0f);
             glBegin(GL_LINES);
 
-            // Bas de la boîte (quadrilatère de base)
+            // Bas de la boîte
             glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
             glVertex3f(corners[1][0], corners[1][1], corners[1][2]);
 
@@ -94,7 +134,7 @@ class AABB {
             glVertex3f(corners[2][0], corners[2][1], corners[2][2]);
             glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
 
-            // Haut de la boîte (quadrilatère de couverture)
+            // Haut de la boîte
             glVertex3f(corners[4][0], corners[4][1], corners[4][2]);
             glVertex3f(corners[5][0], corners[5][1], corners[5][2]);
 
@@ -107,7 +147,7 @@ class AABB {
             glVertex3f(corners[6][0], corners[6][1], corners[6][2]);
             glVertex3f(corners[4][0], corners[4][1], corners[4][2]);
 
-            // Côtés de la boîte (connecter les bases aux sommets)
+            // Côtés de la boîte
             glVertex3f(corners[0][0], corners[0][1], corners[0][2]);
             glVertex3f(corners[4][0], corners[4][1], corners[4][2]);
 

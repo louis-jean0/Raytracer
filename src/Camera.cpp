@@ -37,7 +37,6 @@ Camera::Camera () {
   _zoom = 3.0;
 }
 
-
 void Camera::resize (int _W, int _H) {
   H = _H;
   W = _W;
@@ -48,7 +47,6 @@ void Camera::resize (int _W, int _H) {
   gluPerspective (fovAngle, aspectRatio, nearPlane, farPlane);
   glMatrixMode (GL_MODELVIEW);
 }
-
 
 void Camera::initPos () {
   if (!ini) {
@@ -78,9 +76,8 @@ void Camera::initPos () {
     y = _y;
     z = _z;;
     _zoom = __zoom;
-  } 
+  }
 }
-
 
 void Camera::move (float dx, float dy, float dz) {
   x += dx;
@@ -88,14 +85,12 @@ void Camera::move (float dx, float dy, float dz) {
   z += dz;
 }
 
-
 void Camera::beginRotate (int u, int v) {
   beginu = u; 
   beginv = v;
   moving = 1;
   spinning = 0;
 }
-
 
 void Camera::rotate (int u, int v) {
   if (moving) {
@@ -111,16 +106,13 @@ void Camera::rotate (int u, int v) {
   }
 }
 
-
 void Camera::endRotate () {
   moving = false;
 }
 
-
 void Camera::zoom (float z) {
   _zoom += z;
 }
-
 
 void Camera::apply () {
   glLoadIdentity();
@@ -131,6 +123,13 @@ void Camera::apply () {
   glMultMatrixf(&m[0][0]);
 }
 
+Vec3 Camera::random_in_unit_disk() {
+    Vec3 p;
+    do {
+        p = 2.0 * Vec3((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, 0) - Vec3(1, 1, 0);
+    } while (p.squareLength() >= 1.0);
+    return p;
+}
 
 void Camera::getPos (float & X, float & Y, float & Z) {
   GLfloat m[4][4]; 
@@ -141,6 +140,4 @@ void Camera::getPos (float & X, float & Y, float & Z) {
   X = m[0][0] * _x +  m[0][1] * _y +  m[0][2] * _z;
   Y = m[1][0] * _x +  m[1][1] * _y +  m[1][2] * _z;
   Z = m[2][0] * _x +  m[2][1] * _y +  m[2][2] * _z;
-
 }
-

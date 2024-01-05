@@ -10,8 +10,8 @@
 # NE PAS OUBLIER D'AJOUTER LA LISTE DES DEPENDANCES A LA FIN DU FICHIER
 
 CIBLE = main
-SRCS =  src/Camera.cpp main.cpp src/Trackball.cpp src/imageLoader.cpp src/Mesh.cpp
-LIBS =  -lglut -lGLU -lGL -lm -lpthread 
+SRCS =  src/Camera.cpp main.cpp src/Trackball.cpp src/Mesh.cpp
+LIBS =  -lglut -lGLU -lGL -lGLEW -lm -lpthread 
 #########################################################"
 
 INCDIR = .

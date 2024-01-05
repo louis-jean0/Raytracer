@@ -53,7 +53,6 @@ class KdNode {
             return this->triangles;
         }
 
-
     private:
         AABB box;
         KdNode* leftChild;

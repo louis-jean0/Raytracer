@@ -26,6 +26,10 @@ public:
   inline void setFarPlane (float newFarPlane) { farPlane = newFarPlane; }
   inline unsigned int getScreenWidth () const { return W; }
   inline unsigned int getScreenHeight () const { return H; }
+  inline float getLensRadius() const {return lensRadius;}
+  inline void setLensRadius(float newLensRadius) {lensRadius = newLensRadius;}
+  inline float getFocalDistance() const {return focalDistance;}
+  inline void setFocalDistance(float newFocalDistance) {focalDistance = newFocalDistance;}
   
   void resize (int W, int H);
   
@@ -37,6 +41,7 @@ public:
   void endRotate ();
   void zoom (float z);
   void apply ();
+  static Vec3 random_in_unit_disk();
   
   void getPos (float & x, float & y, float & z);
   inline void getPos (Vec3 & p) { getPos (p[0], p[1], p[2]); }
@@ -54,6 +59,8 @@ private:
   float lastquat[4];
   float x, y, z;
   float _zoom;
+  float lensRadius;
+  float focalDistance;
 };
 
 #endif // CAMERA_H

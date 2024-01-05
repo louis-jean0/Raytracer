@@ -17,16 +17,30 @@ struct RayTriangleIntersection{
 
 class Triangle {
 private:
-    Vec3 m_c[3] , m_normal;
+    Vec3 m_c[3], m_n[3], m_normal;
+    int meshIndex;
     float area;
 public:
     Triangle() {}
+
     Triangle( Vec3 const & c0 , Vec3 const & c1 , Vec3 const & c2 ) {
         m_c[0] = c0;
         m_c[1] = c1;
         m_c[2] = c2;
         updateAreaAndNormal();
     }
+
+    Triangle(Vec3 const & c0 , Vec3 const & c1 , Vec3 const & c2, Vec3 const& n0, Vec3 const& n1, Vec3 const& n2, int meshIndex) {
+        m_c[0] = c0;
+        m_c[1] = c1;
+        m_c[2] = c2;
+        m_n[0] = n0;
+        m_n[1] = n1;
+        m_n[2] = n2;
+        this->meshIndex = meshIndex;
+        updateAreaAndNormal();
+    }
+
     void updateAreaAndNormal() {
         Vec3 nNotNormalized = Vec3::cross( m_c[1] - m_c[0] , m_c[2] - m_c[0] );
         float norm = nNotNormalized.length();
@@ -38,12 +52,24 @@ public:
         return (m_c[0] + m_c[1] + m_c[2]) / 3.0f;
     }
 
-    std::vector<Vec3> getVertices() {
+    std::vector<Vec3> getVertices() const {
         std::vector<Vec3> vertices;
         vertices.push_back(m_c[0]);
         vertices.push_back(m_c[1]);
         vertices.push_back(m_c[2]);
         return vertices;
+    }
+
+    int getMeshIndex() const {
+        return this->meshIndex;
+    }
+
+    std::vector<Vec3> getVerticesNormals() const {
+        std::vector<Vec3> verticesNormals;
+        verticesNormals.push_back(m_n[0]);
+        verticesNormals.push_back(m_n[1]);
+        verticesNormals.push_back(m_n[2]);
+        return verticesNormals;
     }
 
     void setC0(Vec3 const & c0) { m_c[0] = c0; } // remember to update the area and normal afterwards!
