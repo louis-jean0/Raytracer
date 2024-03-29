@@ -32,7 +32,7 @@ Pour exécuter le raytracer, si vous ne souhaitez pas utiliser le script `run.sh
 
 Une fois le programme lancé, appuyez sur `r` pour commencer le rendu de la scène. Une fois le rendu terminé, vous pourrez l'observer dans le fichier `rendu.ppm`.
 
-## Fonctionnalités
+## Fonctionnalités
 
 Rendu de scènes 3D : calcul d'intersections précises avec des sphères, des carrés, des plans et des maillages.
 - Matériaux avancés : prise en charge de matériaux miroirs et transparents pour des effets de réflexion et de réfraction réalistes.
