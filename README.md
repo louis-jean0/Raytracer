@@ -39,7 +39,7 @@ Rendu de scènes 3D : calcul d'intersections précises avec des sphères, des ca
 - Contrôles interactifs : contrôles via le clavier et la souris pour manipuler la vue, activer/désactiver des modes de rendu spécifiques et ajuster les paramètres de la scène.
 - Profondeur de champ : possibilité d'activer un effet de profondeur de champ pour ajouter du réalisme aux rendus.
 
-## Commandes Clavier
+## Commandes clavier
 
 - ? : Afficher l'aide.
 - \+ : Changer de scène.
